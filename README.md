@@ -29,7 +29,7 @@ For New data from 11-1-25 to 10-4-25
 In the 'DataFromJanToApril' directory we have the new data from 11-1-25 to 10-4-25
 
 Step4- Run the AblationCode.py file
- After running we get the instance metric and daily predicated ranks for each day in each csv files.
+ After running we get the instance metric and daily predicated ranks for each day in each csv files
 
        
       
