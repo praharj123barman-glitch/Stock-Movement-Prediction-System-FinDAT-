@@ -1,4 +1,4 @@
-![Alt text](C:\Users\gargp\Desktop\FinDAT\architecture.png)
+![Architecture image](architecture.png)
 
 
 In modelstruct.ipynb ,you can check what is store inside the  'best_model_dim32.pt' like complete architecture of the model,weights 
