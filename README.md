@@ -1,27 +1,5 @@
-Directory Struture-
+![Alt text](C:\Users\gargp\Desktop\FinDAT\architecture.png)
 
-fingat_project/
-├── data/
-│   ├── cleaned/              # Original CSV files with raw stock data
-│   ├── processed/            # Feature-engineered CSVs
-│   ├── windows/              # Sliding-windowed time series data
-│              
-├── models/
-│   ├── attention_gru.py      # Attentive GRU for short-term temporal learning
-│   ├── dynamic_transformer.py # Replaces GAT with dynamic attention mechanism
-│   ├── sector_model.py       # Sector-level aggregation logic
-│   └── fingat.py             # Final model integrating all components
-├── utils/
-│   ├── preprocessing.py      # Data preprocessing helpers
-│   ├── evaluation.py         # Accuracy, precision, IRR,MRR.
-│   └── data_loader.py        # PyTorch Datasets & DataLoaders
-├── config.py                 # Hyperparameters and file paths
-├── memory_efficient.py       # Optional: memory optimization helpers
-├── preprocess.py             # Run full preprocessing pipeline
-├── train.py                  # Train FinGAT model
-├── AblationCode.py            # Evaluate model on test data
-├── run_pipeline.py           # One-click end-to-end execution
-└── README.md                 # Project documentation
 
 In modelstruct.ipynb ,you can check what is store inside the  'best_model_dim32.pt' like complete architecture of the model,weights 
 stored during the training time .
