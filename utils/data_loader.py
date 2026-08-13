@@ -8,13 +8,17 @@ import pandas as pd
 class StockDataset(Dataset):
     """Dataset for stock data with sliding windows"""
     
-    def __init__(self, stock_data, stock_labels, stock_indices, sector_indices, window_indices):
+    def __init__(self, stock_data, stock_labels, stock_indices, sector_indices,
+                 window_indices, history_len=0):
         """
         stock_data: List of arrays containing stock features for each window
         stock_labels: List of arrays containing stock labels for each window
         stock_indices: Indices of stocks to include
         sector_indices: Sector index for each stock
         window_indices: Indices of windows to include (for train/val/test split)
+        history_len: If > 0, also return the last `history_len` windows per stock
+            (raw historical windows) so the long-term Stage 3 branch can be
+            activated. 0 keeps the original 5-tuple output (backward compatible).
         """
         self.stock_data = [stock_data[i] for i in stock_indices]
         self.stock_labels = [stock_labels[i] for i in stock_indices]
@@ -22,6 +26,7 @@ class StockDataset(Dataset):
         self.sector_indices = sector_indices
         self.window_indices = window_indices
         self.num_stocks = len(stock_indices)
+        self.history_len = history_len
     
     def __len__(self):
         return len(self.window_indices)
@@ -60,12 +65,36 @@ class StockDataset(Dataset):
         movement_labels_tensor = torch.as_tensor(np.array(batch_movement_labels),dtype=torch.float32)
         adj_matrix_tensor = torch.as_tensor(adj_matrix,dtype=torch.float32)
         sector_indices_tensor = torch.as_tensor(self.sector_indices,dtype=torch.long)
-        
-        return (features_tensor, adj_matrix_tensor, sector_indices_tensor, 
+
+        if self.history_len > 0:
+            # Build the last `history_len` windows per stock (zero-padded at the
+            # very start of the series). Shape: (num_stocks, history_len, seq_len, input_dim)
+            batch_history = []
+            for i in range(self.num_stocks):
+                weeks = []
+                for k in range(self.history_len):
+                    hist_idx = window_idx - (self.history_len - 1) + k
+                    if 0 <= hist_idx < len(self.stock_data[i]):
+                        weeks.append(self.stock_data[i][hist_idx].astype(np.float32))
+                    else:
+                        weeks.append(np.zeros_like(self.stock_data[i][0], dtype=np.float32))
+                batch_history.append(np.stack(weeks))
+            history_tensor = torch.as_tensor(np.array(batch_history), dtype=torch.float32)
+            return (features_tensor, adj_matrix_tensor, sector_indices_tensor,
+                    return_labels_tensor, movement_labels_tensor, history_tensor)
+
+        return (features_tensor, adj_matrix_tensor, sector_indices_tensor,
                 return_labels_tensor, movement_labels_tensor)
 
-def create_dataloaders(batch_size=32):
-    """Create dataloaders for train, validation, and test sets"""
+def create_dataloaders(batch_size=32, include_history=False):
+    """Create dataloaders for train, validation, and test sets.
+
+    include_history: when True, each batch also carries the last config.NUM_WEEKS
+        raw windows per stock (a 6th tuple element), so the long-term Stage 3
+        branch can be activated. Defaults to False to keep existing callers
+        (ForNewTestSet.py, AblationStudy.py, evaluate_model) working unchanged.
+    """
+    history_len = config.NUM_WEEKS if include_history else 0
     # Load processed data
     stock_data = []
     stock_labels = []
@@ -113,12 +142,12 @@ def create_dataloaders(batch_size=32):
     stock_indices = list(range(len(stock_names)))
     
     # Create datasets
-    train_dataset = StockDataset(stock_data, stock_labels, stock_indices, 
-                                sector_indices, train_indices)
+    train_dataset = StockDataset(stock_data, stock_labels, stock_indices,
+                                sector_indices, train_indices, history_len=history_len)
     val_dataset = StockDataset(stock_data, stock_labels, stock_indices,
-                              sector_indices, val_indices)
+                              sector_indices, val_indices, history_len=history_len)
     test_dataset = StockDataset(stock_data, stock_labels, stock_indices,
-                               sector_indices, test_indices)
+                               sector_indices, test_indices, history_len=history_len)
     
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
