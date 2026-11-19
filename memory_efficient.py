@@ -30,8 +30,10 @@ def gradient_accumulation_training(model, train_loader, optimizer, accumulation_
         # Forward pass
         return_preds, movement_preds = model(stock_features, adj_matrix, sector_indices)
         
-        # Calculate loss and normalize by accumulation steps
-        loss = model.calculate_loss(
+        # Calculate loss and normalize by accumulation steps.
+        # ranking_movement_loss, not calculate_loss: the latter's ranking term has
+        # zero gradient w.r.t. the predictions (see FinGAT.ranking_movement_loss).
+        loss = model.ranking_movement_loss(
             return_preds, movement_preds, return_labels, movement_labels
         ) / accumulation_steps
         
